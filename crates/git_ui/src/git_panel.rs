@@ -2,6 +2,7 @@ use crate::askpass_modal::AskPassModal;
 use crate::commit_modal::CommitModal;
 use crate::commit_tooltip::CommitTooltip;
 use crate::commit_view::CommitView;
+use crate::git_commit_list::GitCommitList;
 use crate::project_diff::{self, Diff, ProjectDiff};
 use crate::remote_output::{self, RemoteAction, SuccessMessage};
 use crate::{branch_picker, picker_prompt, render_remote_button};
@@ -303,7 +304,7 @@ pub struct GitPanel {
     tracked_staged_count: usize,
     update_visible_entries_task: Task<()>,
     width: Option<Pixels>,
-    workspace: WeakEntity<Workspace>,
+    pub(crate) workspace: WeakEntity<Workspace>,
     context_menu: Option<(Entity<ContextMenu>, Point<Pixels>, Subscription)>,
     modal_open: bool,
     show_placeholders: bool,
@@ -312,6 +313,7 @@ pub struct GitPanel {
     bulk_staging: Option<BulkStaging>,
     stash_entries: GitStash,
     _settings_subscription: Subscription,
+    history: Entity<GitCommitList>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -435,6 +437,8 @@ impl GitPanel {
             )
             .detach();
 
+            let history = GitCommitList::new(workspace, window, cx);
+
             let mut this = Self {
                 active_repository,
                 commit_editor,
@@ -473,6 +477,7 @@ impl GitPanel {
                 bulk_staging: None,
                 stash_entries: Default::default(),
                 _settings_subscription,
+                history,
             };
 
             this.schedule_update(window, cx);
@@ -4373,6 +4378,7 @@ impl Render for GitPanel {
                         }
                     })
                     .children(self.render_footer(window, cx))
+                    .child(self.history.clone())
                     .when(self.amend_pending, |this| {
                         this.child(self.render_pending_amend(cx))
                     })
