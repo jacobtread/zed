@@ -503,7 +503,7 @@ pub trait GitRepository: Send + Sync {
 
     /// Returns the git commit log returning at most `max_count` commits from
     /// the current branch, skipping `skip` results
-    fn git_log(&self, skip: u64, max_count: u64) -> BoxFuture<'_, Result<Vec<CommitDetails>>>;
+    fn log(&self, skip: u64, max_count: u64) -> BoxFuture<'_, Result<Vec<CommitDetails>>>;
 
     fn load_commit(&self, commit: String, cx: AsyncApp) -> BoxFuture<'_, Result<CommitDiff>>;
     fn blame(
@@ -835,7 +835,7 @@ impl GitRepository for RealGitRepository {
             .boxed()
     }
 
-    fn git_log(&self, skip: u64, max_size: u64) -> BoxFuture<'_, Result<Vec<CommitDetails>>> {
+    fn log(&self, skip: u64, max_size: u64) -> BoxFuture<'_, Result<Vec<CommitDetails>>> {
         let working_directory = self.working_directory();
         self.executor
             .spawn(async move {
