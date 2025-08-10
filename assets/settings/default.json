@@ -894,6 +894,10 @@
       // Default: inherits editor scrollbar settings
       // "show": null
     },
+    //// Whether to show a list of previous commits in the git panel.
+    ///
+    /// Default: false
+    "commit_history": false
   },
   "message_editor": {
     // Whether to automatically replace emoji shortcodes with emoji characters.

@@ -25,6 +25,7 @@ pub struct GitPanelSettings {
     pub sort_by_path: bool,
     pub collapse_untracked_diff: bool,
     pub tree_view: bool,
+    pub commit_history: bool,
 }
 
 impl ScrollbarVisibility for GitPanelSettings {
