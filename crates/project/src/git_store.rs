@@ -3401,7 +3401,7 @@ impl Repository {
         })
     }
 
-    pub fn git_log(
+    pub fn log(
         &mut self,
         skip: u64,
         max_count: u64,
@@ -3409,7 +3409,7 @@ impl Repository {
         let id = self.id;
         self.send_job(None, move |git_repo, _cx| async move {
             match git_repo {
-                RepositoryState::Local { backend, .. } => backend.git_log(skip, max_count).await,
+                RepositoryState::Local { backend, .. } => backend.log(skip, max_count).await,
                 RepositoryState::Remote { project_id, client } => {
                     let resp = client
                         .request(proto::GitLog {
