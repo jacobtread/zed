@@ -1,4 +1,5 @@
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -9,7 +10,6 @@ use std::{
     path::{Path, PathBuf},
     sync::LazyLock,
 };
-use itertools::Itertools;
 
 /// Returns the path to the user's home directory.
 pub fn home_dir() -> &'static PathBuf {
