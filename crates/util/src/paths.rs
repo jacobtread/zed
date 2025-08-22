@@ -3,6 +3,7 @@ use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 use std::path::StripPrefixError;
 use std::sync::{Arc, OnceLock};
 use std::{
@@ -136,10 +137,6 @@ impl SanitizedPath {
         &self.0
     }
 
-    pub fn to_string(&self) -> String {
-        self.0.to_string_lossy().to_string()
-    }
-
     pub fn to_glob_string(&self) -> String {
         #[cfg(target_os = "windows")]
         {
@@ -157,6 +154,12 @@ impl SanitizedPath {
 
     pub fn strip_prefix(&self, base: &Self) -> Result<&Path, StripPrefixError> {
         self.0.strip_prefix(base.as_path())
+    }
+}
+
+impl Display for SanitizedPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.display())
     }
 }
 
@@ -186,7 +189,7 @@ impl<T: AsRef<Path>> From<T> for SanitizedPath {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PathStyle {
     Posix,
     Windows,
@@ -243,12 +246,8 @@ impl RemotePathBuf {
         Self::new(path_buf, style)
     }
 
-    pub fn to_string(&self) -> String {
-        self.string.clone()
-    }
-
     #[cfg(target_os = "windows")]
-    pub fn to_proto(self) -> String {
+    pub fn to_proto(&self) -> String {
         match self.path_style() {
             PathStyle::Posix => self.to_string(),
             PathStyle::Windows => self.inner.to_string_lossy().replace('\\', "/"),
@@ -256,7 +255,7 @@ impl RemotePathBuf {
     }
 
     #[cfg(not(target_os = "windows"))]
-    pub fn to_proto(self) -> String {
+    pub fn to_proto(&self) -> String {
         match self.path_style() {
             PathStyle::Posix => self.inner.to_string_lossy().to_string(),
             PathStyle::Windows => self.to_string(),
@@ -275,6 +274,12 @@ impl RemotePathBuf {
         self.inner
             .parent()
             .map(|p| RemotePathBuf::new(p.to_path_buf(), self.style))
+    }
+}
+
+impl Display for RemotePathBuf {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.string)
     }
 }
 
@@ -1257,11 +1262,11 @@ mod tests {
 
             // Verify iterators advanced correctly
             assert!(
-                !a_iter.next().map_or(false, |c| c.is_ascii_digit()),
+                !a_iter.next().is_some_and(|c| c.is_ascii_digit()),
                 "Iterator a should have consumed all digits"
             );
             assert!(
-                !b_iter.next().map_or(false, |c| c.is_ascii_digit()),
+                !b_iter.next().is_some_and(|c| c.is_ascii_digit()),
                 "Iterator b should have consumed all digits"
             );
 
