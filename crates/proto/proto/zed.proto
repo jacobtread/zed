@@ -395,8 +395,11 @@ message Envelope {
         GitClone git_clone = 363;
         GitCloneResponse git_clone_response = 364;
 
-        GitLog git_log = 365;
-        GitLogResponse git_log_response = 366; // current max
+        LspQuery lsp_query = 365;
+        LspQueryResponse lsp_query_response = 366;
+
+        GitLog git_log = 367;
+        GitLogResponse git_log_response = 368; // current max
     }
 
     reserved 87 to 88;
