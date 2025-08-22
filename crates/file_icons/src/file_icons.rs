@@ -82,7 +82,7 @@ impl FileIcons {
             }
         }
 
-        return this.get_icon_for_type("default", cx);
+        this.get_icon_for_type("default", cx)
     }
 
     fn default_icon_theme(cx: &App) -> Option<Arc<IconTheme>> {
