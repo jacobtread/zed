@@ -398,8 +398,10 @@ message Envelope {
         LspQuery lsp_query = 365;
         LspQueryResponse lsp_query_response = 366;
 
-        GitLog git_log = 367;
-        GitLogResponse git_log_response = 368; // current max
+        ToggleLspLogs toggle_lsp_logs = 367;
+
+        GitLog git_log = 368;
+        GitLogResponse git_log_response = 369; // current max
     }
 
     reserved 87 to 88;
