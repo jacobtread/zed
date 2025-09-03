@@ -161,6 +161,7 @@ impl MentionUri {
             MentionUri::File { abs_path } => {
                 FileIcons::get_icon(abs_path, cx).unwrap_or_else(|| IconName::File.path().into())
             }
+            MentionUri::PastedImage => IconName::Image.path().into(),
             MentionUri::Directory { abs_path } => {
                 let name = abs_path
                     .file_name()
@@ -170,7 +171,6 @@ impl MentionUri {
                 FileIcons::get_folder_icon(false, name, cx)
                     .unwrap_or_else(|| IconName::Folder.path().into())
             }
-            MentionUri::PastedImage => IconName::Image.path().into(),
             MentionUri::Symbol { .. } => IconName::Code.path().into(),
             MentionUri::Thread { .. } => IconName::Thread.path().into(),
             MentionUri::TextThread { .. } => IconName::Thread.path().into(),
