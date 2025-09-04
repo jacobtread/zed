@@ -11,7 +11,7 @@ use gpui::{App, AsyncApp, BorrowAppContext, Global, SharedString, Task, UpdateGl
 
 use paths::{EDITORCONFIG_NAME, local_settings_file_relative_path, task_file_name};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use smallvec::SmallVec;
 use std::{
@@ -33,13 +33,13 @@ pub type EditorconfigProperties = ec4rs::Properties;
 use crate::{
     ActiveSettingsProfileName, ParameterizedJsonSchema, SettingsJsonSchemaParams, SettingsUiEntry,
     VsCodeSettings, WorktreeId, parse_json_with_comments, replace_value_in_json_text,
-    settings_ui::SettingsUi, update_value_in_json_text,
+    settings_ui_core::SettingsUi, update_value_in_json_text,
 };
 
 /// A value that can be defined as a user setting.
 ///
 /// Settings can be loaded from a combination of multiple JSON files.
-pub trait Settings: SettingsUi + 'static + Send + Sync {
+pub trait Settings: 'static + Send + Sync {
     /// The name of a key within the JSON file from which this setting should
     /// be deserialized. If this is `None`, then the setting will be deserialized
     /// from the root object.
@@ -57,7 +57,7 @@ pub trait Settings: SettingsUi + 'static + Send + Sync {
     const PRESERVED_KEYS: Option<&'static [&'static str]> = None;
 
     /// The type that is stored in an individual JSON file.
-    type FileContent: Clone + Default + Serialize + DeserializeOwned + JsonSchema;
+    type FileContent: Clone + Default + Serialize + DeserializeOwned + JsonSchema + SettingsUi;
 
     /// The logic for combining together values from one or more JSON files into the
     /// final value for this setting.
@@ -1464,9 +1464,29 @@ impl<T: Settings> AnySettingValue for SettingValue<T> {
                 return (T::KEY, Ok(DeserializedSetting(Box::new(value))));
             }
         }
-        let value = T::FileContent::deserialize(json)
+        let value = serde_path_to_error::deserialize::<_, T::FileContent>(json)
             .map(|value| DeserializedSetting(Box::new(value)))
-            .map_err(anyhow::Error::from);
+            .map_err(|err| {
+                // construct a path using the key and reported error path if possible.
+                // Unfortunately, serde_path_to_error does not expose the necessary
+                // methods and data to simply add the key to the path
+                let mut path = String::new();
+                if let Some(key) = key {
+                    path.push_str(key);
+                }
+                let err_path = err.path().to_string();
+                // when the path is empty, serde_path_to_error stringifies the path as ".",
+                // when the path is unknown, serde_path_to_error stringifies the path as an empty string
+                if !err_path.is_empty() && !err_path.starts_with(".") {
+                    path.push('.');
+                    path.push_str(&err_path);
+                }
+                if path.is_empty() {
+                    anyhow::Error::from(err.into_inner())
+                } else {
+                    anyhow::anyhow!("'{}': {}", err.into_inner(), path)
+                }
+            });
         (key, value)
     }
 
@@ -1545,7 +1565,7 @@ impl<T: Settings> AnySettingValue for SettingValue<T> {
     }
 
     fn settings_ui_item(&self) -> SettingsUiEntry {
-        <T as SettingsUi>::settings_ui_entry()
+        <<T as Settings>::FileContent as SettingsUi>::settings_ui_entry()
     }
 }
 
@@ -2127,12 +2147,12 @@ mod tests {
         }
     }
 
-    #[derive(Debug, Deserialize, PartialEq, SettingsUi)]
+    #[derive(Debug, Deserialize, PartialEq)]
     struct TurboSetting(bool);
 
     impl Settings for TurboSetting {
         const KEY: Option<&'static str> = Some("turbo");
-        type FileContent = Option<bool>;
+        type FileContent = bool;
 
         fn load(sources: SettingsSources<Self::FileContent>, _: &mut App) -> Result<Self> {
             sources.json_merge()
@@ -2141,7 +2161,7 @@ mod tests {
         fn import_from_vscode(_vscode: &VsCodeSettings, _current: &mut Self::FileContent) {}
     }
 
-    #[derive(Clone, Debug, PartialEq, Deserialize, SettingsUi)]
+    #[derive(Clone, Debug, PartialEq, Deserialize)]
     struct MultiKeySettings {
         #[serde(default)]
         key1: String,
@@ -2149,7 +2169,7 @@ mod tests {
         key2: String,
     }
 
-    #[derive(Clone, Default, Serialize, Deserialize, JsonSchema)]
+    #[derive(Clone, Default, Serialize, Deserialize, JsonSchema, SettingsUi)]
     struct MultiKeySettingsJson {
         key1: Option<String>,
         key2: Option<String>,
@@ -2174,7 +2194,7 @@ mod tests {
         }
     }
 
-    #[derive(Debug, Deserialize, SettingsUi)]
+    #[derive(Debug, Deserialize)]
     struct JournalSettings {
         pub path: String,
         pub hour_format: HourFormat,
@@ -2187,7 +2207,7 @@ mod tests {
         Hour24,
     }
 
-    #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+    #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema, SettingsUi)]
     struct JournalSettingsJson {
         pub path: Option<String>,
         pub hour_format: Option<HourFormat>,
