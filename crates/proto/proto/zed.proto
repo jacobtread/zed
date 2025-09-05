@@ -400,8 +400,10 @@ message Envelope {
 
         ToggleLspLogs toggle_lsp_logs = 367;
 
-        GitLog git_log = 368;
-        GitLogResponse git_log_response = 369; // current max
+        UpdateUserSettings update_user_settings = 368;
+
+        GitLog git_log = 369;
+        GitLogResponse git_log_response = 370; // current max
     }
 
     reserved 87 to 88;
