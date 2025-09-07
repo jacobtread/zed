@@ -402,8 +402,14 @@ message Envelope {
 
         UpdateUserSettings update_user_settings = 368;
 
-        GitLog git_log = 369;
-        GitLogResponse git_log_response = 370; // current max
+        GetProcesses get_processes = 369;
+        GetProcessesResponse get_processes_response = 370;
+
+        ResolveToolchain resolve_toolchain = 371;
+        ResolveToolchainResponse resolve_toolchain_response = 372;
+
+        GitLog git_log = 373;
+        GitLogResponse git_log_response = 374; // current max
     }
 
     reserved 87 to 88;
