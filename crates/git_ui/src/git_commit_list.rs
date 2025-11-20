@@ -168,25 +168,18 @@ impl GitCommitList {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let commit_summary = CommitSummary {
-            sha: commit.sha.clone(),
-            author_name: commit.author_name.clone(),
-            subject: commit
-                .message
-                .as_ref()
-                .map_or(Default::default(), |message| {
-                    message
-                        .message
-                        .split('\n')
-                        .next()
-                        .unwrap()
-                        .trim_end()
-                        .to_string()
-                        .into()
-                }),
-            commit_timestamp: commit.commit_time.unix_timestamp(),
-            has_parent: false,
-        };
+        let subject: String = commit
+            .message
+            .as_ref()
+            .map_or(Default::default(), |message| {
+                message
+                    .message
+                    .split('\n')
+                    .next()
+                    .unwrap()
+                    .trim_end()
+                    .to_string()
+            });
 
         ListItem::new(item_id)
             .child(
@@ -197,7 +190,7 @@ impl GitCommitList {
                             .h_8()
                             .text_xs()
                             .text_color(Color::Default.color(cx))
-                            .child(commit_summary.subject.clone()),
+                            .child(subject),
                     )
                     .child(
                         h_flex()
@@ -212,12 +205,14 @@ impl GitCommitList {
             .on_click({
                 let workspace = self.workspace.clone();
                 let repo = self.active_repository.as_ref().map(|repo| repo.downgrade());
+                let sha = commit.sha.clone();
+
                 move |_, window, cx| {
                     let repo = match repo.clone() {
                         Some(repo) => repo,
                         None => return,
                     };
-                    CommitView::open(commit_summary.clone(), repo, workspace.clone(), window, cx);
+                    CommitView::open(sha.to_string(), repo, workspace.clone(), None, window, cx);
                 }
             })
     }

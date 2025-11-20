@@ -4109,8 +4109,12 @@ impl Repository {
         let id = self.id;
         self.send_job(None, move |git_repo, _cx| async move {
             match git_repo {
-                RepositoryState::Local { backend, .. } => backend.log(skip, max_count).await,
-                RepositoryState::Remote { project_id, client } => {
+                RepositoryState::Local(LocalRepositoryState { backend, .. }) => {
+                    backend.log(skip, max_count).await
+                }
+                RepositoryState::Remote(RemoteRepositoryState {
+                    client, project_id, ..
+                }) => {
                     let resp = client
                         .request(proto::GitLog {
                             project_id: project_id.0,
