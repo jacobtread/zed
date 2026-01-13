@@ -1,5 +1,4 @@
 use crate::commit_view::CommitView;
-use git::{blame::ParsedCommitMessage, repository::CommitSummary};
 use gpui::{
     App, Entity, ListScrollEvent, ListState, ParentElement, Render, Task, WeakEntity, list,
     prelude::*,
@@ -21,7 +20,7 @@ pub struct CommitDetails {
     pub author_name: SharedString,
     pub author_email: SharedString,
     pub commit_time: OffsetDateTime,
-    pub message: Option<ParsedCommitMessage>,
+    pub message: SharedString,
 }
 
 pub struct GitCommitList {
@@ -124,10 +123,7 @@ impl GitCommitList {
                         author_name: commit.author_name.clone(),
                         author_email: commit.author_email.clone(),
                         commit_time: OffsetDateTime::from_unix_timestamp(commit.commit_timestamp)?,
-                        message: Some(ParsedCommitMessage {
-                            message: commit.message,
-                            ..Default::default()
-                        }),
+                        message: commit.message,
                     })
                 })
                 .try_collect()?;
@@ -171,15 +167,11 @@ impl GitCommitList {
         let subject: String = commit
             .message
             .as_ref()
-            .map_or(Default::default(), |message| {
-                message
-                    .message
-                    .split('\n')
-                    .next()
-                    .unwrap()
-                    .trim_end()
-                    .to_string()
-            });
+            .split('\n')
+            .next()
+            .unwrap()
+            .trim_end()
+            .to_string();
 
         ListItem::new(item_id)
             .child(
@@ -212,7 +204,15 @@ impl GitCommitList {
                         Some(repo) => repo,
                         None => return,
                     };
-                    CommitView::open(sha.to_string(), repo, workspace.clone(), None, window, cx);
+                    CommitView::open(
+                        sha.to_string(),
+                        repo,
+                        workspace.clone(),
+                        None,
+                        None,
+                        window,
+                        cx,
+                    );
                 }
             })
     }
@@ -238,6 +238,6 @@ impl Render for GitCommitList {
                 )
                 .size_full(),
             )
-            .vertical_scrollbar_for(self.commits_list.clone(), window, cx)
+            .vertical_scrollbar_for(&self.commits_list, window, cx)
     }
 }
